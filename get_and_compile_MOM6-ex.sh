@@ -54,7 +54,8 @@ BUILD_PATH_MOM6="${ROOT_PATH}/MOM6-examples/build/mom6_ocean_build"
 BUILD_PATH_SIS2="${ROOT_PATH}/MOM6-examples/build/sis2_build"
 BUILD_PATH_SIS2_FMS="${ROOT_PATH}/MOM6-examples/build/sis2_fms_build"
 #
-INSTALL_PREFIX="/home/groups/s-ees/share/cees/software/no_arch/MOM6/${MOM_VER}"
+#INSTALL_PREFIX="/home/groups/s-ees/share/cees/software/no_arch/MOM6/${MOM_VER}"
+INSTALL_PREFIX="${ROOT_PATH}/.local"
 LINK_PATH_FMS="${INSTALL_PREFIX}/lib"
 for dr in lib bin
 do
