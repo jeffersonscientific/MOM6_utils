@@ -10,10 +10,6 @@
 # see instructions at:
 # https://github.com/mom-ocean/MOM6/tree/main/ac
 #
-#
-# load CEES-beta stack:
-
-#
 module purge
 #
 module load gcc/10.1.0
@@ -55,7 +51,7 @@ BUILD_PATH_SIS2="${ROOT_PATH}/MOM6-examples/build/sis2_build"
 BUILD_PATH_SIS2_FMS="${ROOT_PATH}/MOM6-examples/build/sis2_fms_build"
 #
 #INSTALL_PREFIX="/home/groups/s-ees/share/cees/software/no_arch/MOM6/${MOM_VER}"
-INSTALL_PREFIX="${ROOT_PATH}/.local"
+INSTALL_PREFIX="${ROOT_PATH}/local"
 LINK_PATH_FMS="${INSTALL_PREFIX}/lib"
 for dr in lib bin
 do
