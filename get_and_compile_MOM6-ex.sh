@@ -21,13 +21,6 @@ module load openmpi/
 module load netcdf-c/
 module load netcdf-fortran/
 module load hdf5/1.12.2
-
-#. /home/groups/s-ees/share/cees/spack_cees/scripts/cees_sw_setup-beta.sh
-#module load gcc-cees-beta/
-#module load mpich-cees-beta/
-#module load netcdf-fortran-cees-beta/
-#module load netcdf-c-cees-beta/
-#module load hdf5-cees-beta
 #
 # from here, follow the instructions from:
 # https://github.com/mom-ocean/MOM6/tree/main/ac
@@ -45,15 +38,30 @@ echo "CD'd to `pwd`"
 DO_FMS=1
 DO_MOM6=1
 DO_SIS2=1
+#DO_SIS2_FMS=1
 #
 ROOT_PATH=`pwd`
 MKMF_DIR="`pwd`/MOM6-examples/src/mkmf/bin"
 MKFM_SHERLOCK_TEMPLATE="`pwd`/mkmf_templates/linux-gnu-sherlock-openmpi.mk"
-MOM6_SRC=${ROOT_PATH}/MOM6-examples/src/MOM6
+MOM6_SRC="${ROOT_PATH}/MOM6-examples/src/MOM6"
+MOM_VER="2016.9.17"
+#
+MOM6_OCEAN_EXE="MOM6-Ocean"
+MOM6_SIS2_EXE="MOM6-SIS2"
 #
 BUILD_PATH_FMS="${ROOT_PATH}/MOM6-examples/build/fms_build"
 BUILD_PATH_MOM6="${ROOT_PATH}/MOM6-examples/build/mom6_ocean_build"
 BUILD_PATH_SIS2="${ROOT_PATH}/MOM6-examples/build/sis2_build"
+BUILD_PATH_SIS2_FMS="${ROOT_PATH}/MOM6-examples/build/sis2_fms_build"
+#
+INSTALL_PREFIX="/home/groups/s-ees/share/cees/software/no_arch/MOM6/${MOM_VER}"
+LINK_PATH_FMS="${INSTALL_PREFIX}/lib"
+for dr in lib bin
+do
+  if [[ ! -d ${INSTALL_PREFIX}/$dr ]]; then
+    mkdir -p ${INSTALL_PREFIX}/$dr
+  fi
+done
 #
 H5_PATH=$(dirname $(dirname $(which h5pcc)))
 #
@@ -79,6 +87,8 @@ if [[ $DO_FMS == 1 ]]; then
   ${MKMF_DIR}/list_paths -l ${ROOT_PATH}/MOM6-examples/src/FMS
   ${MKMF_DIR}/mkmf -t ${MKFM_SHERLOCK_TEMPLATE} -p libfms.a -c "-Duse_libMPI -Duse_netCDF" path_names
   make NETCDF=3 REPRO=1 libfms.a -j
+  #
+  cp libfms.a ${INSTALL_PREFIX}/lib
 fi
 #
 ##########
@@ -100,14 +110,16 @@ if [[ $DO_MOM6 == 1 ]]; then
   #
   echo "MKMF COMMAND: "
   #CMD_MKF="${MKMF_DIR}/mkmf -t ${MKFM_SHERLOCK_TEMPLATE} -o -I${BUILD_PATH_FMS} -p MOM6 -l (-L${BUILD_PATH_FMS} -lfms) path_names"
-  CMD_MKF="${MKMF_DIR}/mkmf -t ${MKFM_SHERLOCK_TEMPLATE} -o -I${BUILD_PATH_FMS} -p MOM6 path_names"
+  CMD_MKF="${MKMF_DIR}/mkmf -t ${MKFM_SHERLOCK_TEMPLATE} -o -I${BUILD_PATH_FMS} -p ${MOM6_OCEAN_EXE} path_names"
   #
   echo "CMD_MKF: $CMD_MKF"
   #${MKMF_DIR}/mkmf -t ${MKFM_SHERLOCK_TEMPLATE} -I '-I${BUILD_PATH_FMS}' -p MOM6 -l '-L${BUILD_PATH_FMS} -lfms' path_names
   $CMD_MKF
   #
   # LIBS_FROM_SHELL=" -L${BUILD_PATH_FMS} -lfms -L${H5_PATH}/lib -lhdf5 -lhdf5_hl -lhdf5_hl_fortran"
-  LIBS_FROM_SHELL=" -L${BUILD_PATH_FMS} -lfms " make NETCDF=3 REPRO=1 MOM6 -j
+  LIBS_FROM_SHELL=" -L${BUILD_PATH_FMS} -lfms " make NETCDF=3 REPRO=1 ${MOM6_OCEAN_EXE} -j
+  #
+  cp ${MOM6_OCEAN_EXE} ${INSTALL_PREFIX}/bin
 fi
 ###################
 #
@@ -128,13 +140,50 @@ if [[ $DO_SIS2 == 1 ]]; then
   #
   echo "*** DEBUG [SIS2]: do MKMF/list_paths"
   ${MKMF_DIR}/list_paths -l\
-   ${MOM6_SRC}/config_src/{infra/FMS1,memory/dynamic_symmetric,drivers/FMS_cap,external} ${MOM6_SRC}/{*,*/*}/\
+   ${MOM6_SRC}/config_src/{infra/FMS1,memory/dynamic_symmetric,drivers/FMS_cap,external}\
+   ${MOM6_SRC}/src/{*,*/*}/\
    ${ROOT_PATH}/MOM6-examples/src/{atmos_null,coupler,land_null,ice_param,icebergs,SIS2,FMS/coupler,FMS/include}/
   echo "*** DEBUG [SIS2]: list_paths complete."
   #
   #${MKMF_DIR}/mkmf -t ${MKFM_SHERLOCK_TEMPLATE} -o '-I../shared' -p MOM6 -l '-L../shared/repro -lfms' -c '-Duse_AM3_physics -D_USE_LEGACY_LAND_' path_names
-  ${MKMF_DIR}/mkmf -t ${MKFM_SHERLOCK_TEMPLATE} -o -I${BUILD_PATH_FMS} -p MOM6 -l'-L${BUILD_PATH_FMS} -lfms' -c '-Duse_AM3_physics -D_USE_LEGACY_LAND_' path_names
+  ${MKMF_DIR}/mkmf -t ${MKFM_SHERLOCK_TEMPLATE} -o -I${BUILD_PATH_FMS} -p ${MOM6_SIS2_EXE} -l'-L${LINK_PATH_FMS} -lfms' -c '-Duse_AM3_physics -D_USE_LEGACY_LAND_' path_names
   #${MKMF_DIR}/mkmf -t ${MKFM_SHERLOCK_TEMPLATE} -o '-I${BUILD_PATH_FMS}' -p MOM6 -c '-Duse_AM3_physics -D_USE_LEGACY_LAND_' path_names
   #
-  LIBS_FROM_SHELL=" -L${BUILD_PATH_FMS} -lfms " make NETCDF=3 REPRO=1 MOM6 -j
+  LIBS_FROM_SHELL=" -L${BUILD_PATH_FMS} -lfms " make NETCDF=3 REPRO=1 ${MOM6_SIS2_EXE} -j
+  #
+  cp ${MOM6_SIS2_EXE} ${INSTALL_PREFIX}/bin
 fi
+
+###################
+#
+# This should work (I think) by just adding all the FMS codes to the list_paths step,but it does not... or not yet, but since we don't need it,
+#  we will forego the exercise for now.
+#
+## SIS2 (MOM6 + coupled mode) + FMS compiled in
+## MOM6 (Ocean Only)
+#if [[ $DO_SIS2_FMS == 1 ]]; then
+#  echo "*** *** Do MOM6 (SIS2) + FMS *** ***"
+#  echo "*** *** *** ***"
+#  rm -rf ${BUILD_PATH_SIS2_FMS}
+#  mkdir -p ${BUILD_PATH_SIS2_FMS}
+#  cd ${BUILD_PATH_SIS2_FMS}
+#  rm -f path_names     # just in case we bypass nuking the build-dir, but want to refresh mkmf (eg, debug linking).
+#  #
+#  echo "should be in SIS2 build path:"
+#  echo `pwd`
+#  #
+#  echo "*** DEBUG [SIS2]: do MKMF/list_paths"
+#  ${MKMF_DIR}/list_paths -l\
+#   ${ROOT_PATH}/MOM6-examples/src/FMS\
+#   ${MOM6_SRC}/config_src/{infra/FMS1,memory/dynamic_symmetric,drivers/FMS_cap,external}\
+#   ${MOM6_SRC}/src/{*,*/*}/\
+#   ${ROOT_PATH}/MOM6-examples/src/{atmos_null,coupler,land_null,ice_param,icebergs,SIS2,FMS/coupler,FMS/include}/
+#  echo "*** DEBUG [SIS2]: list_paths complete."
+#  #
+#  #${MKMF_DIR}/mkmf -t ${MKFM_SHERLOCK_TEMPLATE} -o '-I../shared' -p MOM6 -l '-L../shared/repro -lfms' -c '-Duse_AM3_physics -D_USE_LEGACY_LAND_' path_names
+#  ${MKMF_DIR}/mkmf -t ${MKFM_SHERLOCK_TEMPLATE} -o -I${BUILD_PATH_FMS} -p ${MOM6_SIS2_EXE}  -c '-Duse_AM3_physics -D_USE_LEGACY_LAND_' path_names
+#  #${MKMF_DIR}/mkmf -t ${MKFM_SHERLOCK_TEMPLATE} -o '-I${BUILD_PATH_FMS}' -p MOM6 -c '-Duse_AM3_physics -D_USE_LEGACY_LAND_' path_names
+#  #
+#  echo "*** DEBUG: Now, do make"
+#  make NETCDF=3 REPRO=1 ${MOM6_SIS2_EXE} -j
+#fi
