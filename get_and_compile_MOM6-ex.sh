@@ -107,17 +107,14 @@ if [[ $DO_MOM6 == 1 ]]; then
   # TODO: Figure out how mkmf flags should be specified. I think the given syntax is wrong.
   rm -f path_names; \
   ${MKMF_DIR}/list_paths -l ${MOM6_SRC}/{config_src/infra/FMS1,config_src/memory/dynamic_symmetric,config_src/drivers/solo_driver,config_src/external,src/{*,*/*}}/
-  #${MKMF_DIR}/mkmf -t ${MKFM_SHERLOCK_TEMPLATE} -o '-I../shared/repro' -p MOM6 -l '-L../shared/repro -lfms' path_names
   #
   echo "MKMF COMMAND: "
+  # having trouble getting the -l option to work, so skip it here and handle it as an env variable (see below).
   #CMD_MKF="${MKMF_DIR}/mkmf -t ${MKFM_SHERLOCK_TEMPLATE} -o -I${BUILD_PATH_FMS} -p MOM6 -l (-L${BUILD_PATH_FMS} -lfms) path_names"
   CMD_MKF="${MKMF_DIR}/mkmf -t ${MKFM_SHERLOCK_TEMPLATE} -o -I${BUILD_PATH_FMS} -p ${MOM6_OCEAN_EXE} path_names"
-  #
   echo "CMD_MKF: $CMD_MKF"
-  #${MKMF_DIR}/mkmf -t ${MKFM_SHERLOCK_TEMPLATE} -I '-I${BUILD_PATH_FMS}' -p MOM6 -l '-L${BUILD_PATH_FMS} -lfms' path_names
   $CMD_MKF
   #
-  # LIBS_FROM_SHELL=" -L${BUILD_PATH_FMS} -lfms -L${H5_PATH}/lib -lhdf5 -lhdf5_hl -lhdf5_hl_fortran"
   LIBS_FROM_SHELL=" -L${BUILD_PATH_FMS} -lfms " make NETCDF=3 REPRO=1 ${MOM6_OCEAN_EXE} -j
   #
   cp ${MOM6_OCEAN_EXE} ${INSTALL_PREFIX}/bin
@@ -146,9 +143,7 @@ if [[ $DO_SIS2 == 1 ]]; then
    ${ROOT_PATH}/MOM6-examples/src/{atmos_null,coupler,land_null,ice_param,icebergs,SIS2,FMS/coupler,FMS/include}/
   echo "*** DEBUG [SIS2]: list_paths complete."
   #
-  #${MKMF_DIR}/mkmf -t ${MKFM_SHERLOCK_TEMPLATE} -o '-I../shared' -p MOM6 -l '-L../shared/repro -lfms' -c '-Duse_AM3_physics -D_USE_LEGACY_LAND_' path_names
   ${MKMF_DIR}/mkmf -t ${MKFM_SHERLOCK_TEMPLATE} -o -I${BUILD_PATH_FMS} -p ${MOM6_SIS2_EXE} -l'-L${LINK_PATH_FMS} -lfms' -c '-Duse_AM3_physics -D_USE_LEGACY_LAND_' path_names
-  #${MKMF_DIR}/mkmf -t ${MKFM_SHERLOCK_TEMPLATE} -o '-I${BUILD_PATH_FMS}' -p MOM6 -c '-Duse_AM3_physics -D_USE_LEGACY_LAND_' path_names
   #
   LIBS_FROM_SHELL=" -L${BUILD_PATH_FMS} -lfms " make NETCDF=3 REPRO=1 ${MOM6_SIS2_EXE} -j
   #
